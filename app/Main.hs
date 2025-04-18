@@ -28,6 +28,6 @@ main = do
     then do
       putStrLn "Expected first argument to be '-E'"
       exitFailure
-   else do if matchPattern pattern input_line
-      then exitSuccess
-      else exitFailure
+    else do if matchPattern pattern input_line
+              then exitSuccess
+              else exitFailure

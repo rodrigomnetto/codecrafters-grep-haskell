@@ -10,16 +10,29 @@ matchPattern pattern input = do
   if length pattern == 1
     then head pattern `elem` input
     else 
-      if length pattern == 2
-        then case pattern of
-          "\\d" -> isDigit $ head input
-          "\\w" -> isDigitOrLetter $ head input
-          _     -> error $ "Unhandled pattern: " ++ pattern
-        else error $ "Unhandled pattern: " ++ pattern
+      let (f, _) = (parsePattern pattern) in
+        f (head input)
 
+parsePattern :: String -> (Char -> Bool, String)
+parsePattern pattern =
+  case pattern of
+    '\\':r1   -> case r1 of
+      'd':r2 -> (isDigitOrLetter, r2)
+      'w':r2 -> (isAlpha, r2)
+    '[':r1    -> isAny r1
+    
+isChar :: Char -> Char -> Bool
+isChar chr c = (chr == c)
+
+isAny :: String -> (Char -> Bool, String)
+isAny [] = (\_ -> False, [])
+isAny (']':xs) = (\_ -> False, xs)
+isAny (x:xs)   = 
+  let (f1, r) = isAny xs 
+  in (\y -> isChar x y || f1 y, r)
 
 isDigitOrLetter :: Char -> Bool
-isDigitOrLetter c = isDigit c || isAlpha c
+isDigitOrLetter c = (isDigit c) || (isAlpha c)
 
 main :: IO ()
 main = do

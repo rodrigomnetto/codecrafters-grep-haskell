@@ -13,8 +13,13 @@ matchPattern pattern input = do
       if length pattern == 2
         then case pattern of
           "\\d" -> isDigit $ head input
+          "\\w" -> isDigitOrLetter $ head input
           _     -> error $ "Unhandled pattern: " ++ pattern
         else error $ "Unhandled pattern: " ++ pattern
+
+
+isDigitOrLetter :: Char -> Bool
+isDigitOrLetter c = isDigit c || isAlpha c
 
 main :: IO ()
 main = do

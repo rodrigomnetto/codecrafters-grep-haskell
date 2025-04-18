@@ -17,8 +17,8 @@ parsePattern :: String -> (Char -> Bool, String)
 parsePattern pattern =
   case pattern of
     '\\':r1   -> case r1 of
-      'd':r2 -> (isDigitOrLetter, r2)
-      'w':r2 -> (isAlpha, r2)
+      'd':r2 -> (isDigit, r2)
+      'w':r2 -> (isDigitOrLetter, r2)
     '[':r1    -> isAny r1
     
 isChar :: Char -> Char -> Bool

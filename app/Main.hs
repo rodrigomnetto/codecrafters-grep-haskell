@@ -11,7 +11,7 @@ matchPattern pattern input =
     then head pattern `elem` input
     else
       let (f, _) = parsePattern pattern
-      in f (head input)
+      in True `elem` [f x | x <- input]
 
 parsePattern :: String -> (Char -> Bool, String)
 parsePattern pattern =

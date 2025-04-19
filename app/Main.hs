@@ -6,12 +6,13 @@ import Data.Char
 import System.IO (hSetBuffering, stdout, stderr, BufferMode (NoBuffering))
 
 matchPattern :: String -> String -> Bool
+matchPattern [] _ = True
+matchPattern (_:_) [] = False
 matchPattern pattern input =
-  if length pattern == 1
-    then head pattern `elem` input
-    else
-      let (f, _) = parsePattern pattern
-      in True `elem` [f x | x <- input]
+  let (f, ptr) = parsePattern pattern in
+    if f (head input) == True
+      then matchPattern ptr (tail input)
+      else matchPattern pattern (tail input)
 
 parsePattern :: String -> (Char -> Bool, String)
 parsePattern pattern =
@@ -25,6 +26,7 @@ parsePattern pattern =
         in (not . f1, r3)
       _        ->
         isAny r1
+    x   : xs -> (isChar x, xs)
       
 isChar :: Char -> Char -> Bool
 isChar chr c = chr == c

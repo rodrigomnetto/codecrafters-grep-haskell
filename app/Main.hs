@@ -19,8 +19,13 @@ parsePattern pattern =
     '\\' : r1 -> case r1 of
       'd' : r2 -> (isDigit, r2)
       'w' : r2 -> (isDigitOrLetter, r2)
-    '[' : r1  -> isAny r1
-
+    '[' : r1  -> case r1 of
+      '^' : r2 -> 
+        let (f1, r3) = isAny r2
+        in (not . f1, r3)
+      _        ->
+        isAny r1
+      
 isChar :: Char -> Char -> Bool
 isChar chr c = chr == c
 

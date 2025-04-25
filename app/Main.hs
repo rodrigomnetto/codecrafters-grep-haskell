@@ -17,7 +17,7 @@ type Regex = (Metadata -> (Bool, Metadata))
 matchPattern :: Metadata -> Regex -> Bool
 matchPattern metadata regex
   | isEmpty metadata = False
-  | otherwise = 
+  | otherwise =
     let (r, rest) = regex metadata in
     if r
       then r
@@ -35,7 +35,9 @@ parseRegex pattern =
         '[' : r1  -> case r1 of
           '^' : r2 -> isNotAny r2
           _        -> isAny r1
-        x   : xs -> (isChar x, xs)
+        chr   : r1 -> case r1 of
+          '+' : r2 -> (oneOrMore chr, r2)
+          _       -> (isChar chr, r1)
   in
     f `andThen` parseRegex rest
 
@@ -53,8 +55,22 @@ orElse f1 f2 =
       then (r1, rest1)
       else f2 x
 
+oneOrMore :: Char -> Regex
+oneOrMore chr metadata
+  | isEmpty metadata = (False, metadata)
+  | otherwise =
+    let (r, rest) = isChar chr metadata in
+      if r
+        then
+          let (r1, rest1) = oneOrMore chr rest in
+            if not r1
+              then (r, rest)
+              else (r1, rest1)
+        else
+          (r, rest)
+
 startAnchor :: Regex
-startAnchor metadata = 
+startAnchor metadata =
   let isBegin = getIndex metadata == 0 in
     if isBegin
     then (True, metadata)
@@ -64,7 +80,7 @@ endAnchor :: Regex
 endAnchor metadata = (isEmpty metadata, metadata)
 
 isDigit2 :: Regex
-isDigit2 metadata 
+isDigit2 metadata
   | isEmpty metadata = (False, metadata)
   | otherwise =
     let chr = getCharacter metadata
@@ -75,7 +91,7 @@ isDigit2 metadata
 isChar :: Char -> Regex
 isChar char metadata
   | isEmpty metadata = (False, metadata)
-  | otherwise = 
+  | otherwise =
     let chr = getCharacter metadata
         tailMetadata = getTail metadata
     in
@@ -96,9 +112,9 @@ isAny (x:xs) =
   in (isChar x `orElse` p , r)
 
 isDigitOrLetter :: Regex
-isDigitOrLetter metadata 
+isDigitOrLetter metadata
   | isEmpty metadata = (False, metadata)
-  | otherwise = 
+  | otherwise =
     let chr = getCharacter metadata
         tailMetadata = getTail metadata
     in
@@ -107,10 +123,10 @@ isDigitOrLetter metadata
 --metadata functions
 
 extractMetadata :: String -> Metadata
-extractMetadata input = 
-  let size = length input 
+extractMetadata input =
+  let size = length input
   in
-    (size, zip [0..size - 1]  input) 
+    (size, zip [0..size - 1]  input)
 
 isEmpty :: Metadata -> Bool
 isEmpty (_, []) = True
@@ -127,6 +143,9 @@ getSize (s, _) = s
 
 getTail :: Metadata -> Metadata
 getTail (s, x:xs) = (s, xs)
+
+getList :: Metadata -> [(Int, Char)]
+getList (_, l) = l
 
 clean :: Metadata -> Metadata
 clean (s, _) = (s, [])
@@ -149,7 +168,7 @@ main = do
       exitFailure
     else
       let regex = parseRegex pattern
-          metadata = extractMetadata input_line 
+          metadata = extractMetadata input_line
       in
         if matchPattern metadata regex
           then exitSuccess

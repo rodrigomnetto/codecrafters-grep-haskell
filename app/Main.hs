@@ -29,6 +29,7 @@ parseRegex pattern =
   let (f, rest) = case pattern of
         '^' : r1 -> (startAnchor, r1)
         '$' : r1 -> (endAnchor, r1)
+        '.' : r1 -> (anyCharacter, r1)
         '\\': r1 -> case r1 of
           'd' : r2 -> (isDigit2, r2)
           'w' : r2 -> (isDigitOrLetter, r2)
@@ -55,6 +56,11 @@ orElse f1 f2 =
     if r1
       then (r1, rest1)
       else f2 x
+
+anyCharacter :: Regex
+anyCharacter metadata
+  | isEmpty metadata = (False, metadata)
+  | otherwise = (True, getTail metadata)
 
 oneOrMore :: Char -> String -> Regex
 oneOrMore chr rgx metadata

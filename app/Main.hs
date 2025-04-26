@@ -36,7 +36,7 @@ parseRegex pattern =
           '^' : r2 -> isNotAny r2
           _        -> isAny r1
         chr   : r1 -> case r1 of
-          '+' : r2 -> (oneOrMore chr, r2)
+          '+' : r2 -> (oneOrMore chr r2, r2)
           _       -> (isChar chr, r1)
   in
     f `andThen` parseRegex rest
@@ -55,15 +55,17 @@ orElse f1 f2 =
       then (r1, rest1)
       else f2 x
 
-oneOrMore :: Char -> Regex
-oneOrMore chr metadata
+oneOrMore :: Char -> String -> Regex
+oneOrMore chr rgx metadata
   | isEmpty metadata = (False, metadata)
-  | otherwise =
+  | otherwise =    
     let (r, rest) = isChar chr metadata in
       if r
         then
-          let (r1, rest1) = oneOrMore chr rest in
-            if not r1
+            let parsedRgx = parseRegex rgx
+                (r2, _) = parsedRgx rest
+                (r1, rest1) = oneOrMore chr rgx rest in
+            if r2 || not r1
               then (r, rest)
               else (r1, rest1)
         else

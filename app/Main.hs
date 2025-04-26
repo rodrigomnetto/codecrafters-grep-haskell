@@ -37,6 +37,7 @@ parseRegex pattern =
           _        -> isAny r1
         chr   : r1 -> case r1 of
           '+' : r2 -> (oneOrMore chr r2, r2)
+          '?' : r2 -> (zeroOrOne chr, r2)
           _       -> (isChar chr, r1)
   in
     f `andThen` parseRegex rest
@@ -70,6 +71,13 @@ oneOrMore chr rgx metadata
               else (r1, rest1)
         else
           (r, rest)
+
+zeroOrOne :: Char -> Regex
+zeroOrOne chr metadata =
+  let (r, rest) = isChar chr metadata in
+    if r
+      then (r, rest)
+      else (True, metadata)
 
 startAnchor :: Regex
 startAnchor metadata =

@@ -12,7 +12,7 @@ import GHC.Generics (Meta)
 
 
 type Metadata = (Int, [(Int, Char)]);
-type Regex = (Metadata -> (Bool, Metadata))
+type Regex = (Metadata -> (Bool, Metadata)) --tipo mais complexo, fn, parsed, groups
 
 matchPattern :: Metadata -> Regex -> Bool
 matchPattern metadata regex
@@ -23,32 +23,36 @@ matchPattern metadata regex
       then r
       else matchPattern rest regex
 
-parseRegex :: String -> Regex
-parseRegex [] = \x -> (True, x)
-parseRegex pattern =
-  let (f, rest) = case pattern of
-        '^' : r1 -> (startAnchor, r1)
-        '$' : r1 -> (endAnchor, r1)
-        '.' : r1 -> (anyCharacter, r1)
+parseRegex :: String -> [Regex] -> Regex
+parseRegex [] l = loopRegex (reverse l)
+parseRegex pattern l =
+  let (rest, list) = case pattern of
+        '^' : r1 -> build startAnchor l r1
+        '$' : r1 -> build endAnchor l r1
+        '.' : r1 -> build anyCharacter l r1
         '\\': r1 -> case r1 of
-          'd' : r2 -> (isDigit2, r2)
-          'w' : r2 -> (isDigitOrLetter, r2)
-        '[' : r1  -> case r1 of
-          '^' : r2 -> isNotAny r2
-          _        -> isAny r1
-        chr   : r1 -> case r1 of
-          '+' : r2 -> (oneOrMore chr r2, r2)
-          '?' : r2 -> (zeroOrOne chr, r2)
-          _       -> (isChar chr, r1)
+          'd' : r2 -> build isDigit2 l r2
+          'w' : r2 -> build isDigitOrLetter l r2
+        '[' : r1 -> case r1 of
+          '^' : r2 -> let (rgx, rest1) = isNotAny r2 in build rgx l rest1
+          _        -> let (rgx, rest1) = isNotAny r1 in build rgx l rest1
+        '+' : r1 -> build (oneOrMore (head l) r1) (tail l) r1
+        '?' : r1 -> build (zeroOrOne (head l)) (tail l) r1
+        chr : r1 -> build (isChar chr) l r1
   in
-    f `andThen` parseRegex rest
+    parseRegex rest list
 
-andThen :: Regex -> Regex -> Regex
-andThen f1 f2 =
-  \x -> let (r1, rest1) = f1 x in
-    if r1
-      then f2 rest1
-      else (r1, rest1)
+loopRegex :: [Regex] -> Metadata -> (Bool, Metadata)
+loopRegex [] metadata = (True, metadata)
+loopRegex (x:xs) metadata =
+    let (r1, rest) = x metadata in
+      if r1
+        then loopRegex xs rest
+        else (False, rest)
+
+build :: Regex -> [Regex] -> String -> (String, [Regex])
+build regex list rest =
+  (rest, regex:list) 
 
 orElse :: Regex -> Regex -> Regex
 orElse f1 f2 =
@@ -62,25 +66,25 @@ anyCharacter metadata
   | isEmpty metadata = (False, metadata)
   | otherwise = (True, getTail metadata)
 
-oneOrMore :: Char -> String -> Regex
-oneOrMore chr rgx metadata
+oneOrMore :: Regex -> String -> Regex
+oneOrMore regex rgxIn metadata
   | isEmpty metadata = (False, metadata)
   | otherwise =    
-    let (r, rest) = isChar chr metadata in
+    let (r, rest) = regex metadata in
       if r
         then
-            let parsedRgx = parseRegex rgx
+            let parsedRgx = parseRegex rgxIn []
                 (r2, _) = parsedRgx rest
-                (r1, rest1) = oneOrMore chr rgx rest in
+                (r1, rest1) = oneOrMore regex rgxIn rest in
             if r2 || not r1
               then (r, rest)
               else (r1, rest1)
         else
           (r, rest)
 
-zeroOrOne :: Char -> Regex
-zeroOrOne chr metadata =
-  let (r, rest) = isChar chr metadata in
+zeroOrOne :: Regex -> Regex
+zeroOrOne regex metadata =
+  let (r, rest) = regex metadata in
     if r
       then (r, rest)
       else (True, metadata)
@@ -183,7 +187,7 @@ main = do
       putStrLn "Expected first argument to be '-E'"
       exitFailure
     else
-      let regex = parseRegex pattern
+      let regex = parseRegex pattern []
           metadata = extractMetadata input_line
       in
         if matchPattern metadata regex

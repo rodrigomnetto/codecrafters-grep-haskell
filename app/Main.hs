@@ -35,7 +35,7 @@ parseRegex pattern l =
           'w' : r2 -> build isDigitOrLetter l r2
         '[' : r1 -> case r1 of
           '^' : r2 -> let (rgx, rest1) = isNotAny r2 in build rgx l rest1
-          _        -> let (rgx, rest1) = isNotAny r1 in build rgx l rest1
+          _        -> let (rgx, rest1) = isAny r1 in build rgx l rest1
         '+' : r1 -> build (oneOrMore (head l) r1) (tail l) r1
         '?' : r1 -> build (zeroOrOne (head l)) (tail l) r1
         chr : r1 -> build (isChar chr) l r1

@@ -11,7 +11,7 @@ import System.IO (hSetBuffering, stdout, stderr, BufferMode (NoBuffering))
 import GHC.Generics (Meta)
 
 
-type Metadata = (Int, [(Int, Char)]);
+type Metadata = (Int, [(Int, Char)])
 type Regex = (Metadata -> (Bool, Metadata)) --tipo mais complexo, fn, parsed, groups
 
 matchPattern :: Metadata -> Regex -> Bool
@@ -27,6 +27,12 @@ parseRegex :: String -> [Regex] -> Regex
 parseRegex [] l = loopRegex (reverse l)
 parseRegex pattern l =
   let (rest, list) = case pattern of
+        '(' : r1 -> 
+              let (grp, r2) = captureGroup r1 
+                  grpRegex = parseRegex grp []
+              in
+                build grpRegex l r2
+        '|' : r1 -> build (orElse (loopRegex (reverse l)) (parseRegex r1 [])) [] []
         '^' : r1 -> build startAnchor l r1
         '$' : r1 -> build endAnchor l r1
         '.' : r1 -> build anyCharacter l r1
@@ -42,6 +48,12 @@ parseRegex pattern l =
   in
     parseRegex rest list
 
+captureGroup :: String -> (String, String)
+captureGroup (')':xs) = ([], xs)
+captureGroup (x:xs) =
+  let (grp, rest) = captureGroup xs in
+    (x:grp, rest)
+
 loopRegex :: [Regex] -> Metadata -> (Bool, Metadata)
 loopRegex [] metadata = (True, metadata)
 loopRegex (x:xs) metadata =
@@ -52,7 +64,7 @@ loopRegex (x:xs) metadata =
 
 build :: Regex -> [Regex] -> String -> (String, [Regex])
 build regex list rest =
-  (rest, regex:list) 
+  (rest, regex:list)
 
 orElse :: Regex -> Regex -> Regex
 orElse f1 f2 =
@@ -69,7 +81,7 @@ anyCharacter metadata
 oneOrMore :: Regex -> String -> Regex
 oneOrMore regex rgxIn metadata
   | isEmpty metadata = (False, metadata)
-  | otherwise =    
+  | otherwise =
     let (r, rest) = regex metadata in
       if r
         then

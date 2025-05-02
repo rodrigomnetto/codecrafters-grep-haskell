@@ -16,7 +16,7 @@ type Regex = (Metadata -> (Bool, Metadata)) --tipo mais complexo, fn, parsed, gr
 
 matchPattern :: Metadata -> Regex -> Bool
 matchPattern metadata regex
-  | isEmpty metadata = False
+  | isEmpty metadata = False -- nao pode retornar falso sempre, vazio é vazio, pode dar match
   | otherwise =
     let (r, rest) = regex metadata in
     if r
@@ -184,6 +184,13 @@ clean (s, _) = (s, [])
 
 --end of metadata functions
 
+--fixes (zzz|jjj)?$
+--loop infinito quando input é jjjj
+--da erro quando input é vazio
+--aprender a debugar em haskell
+--deve consumir o caractere quando um erro ocorre?
+
+
 main :: IO ()
 main = do
   -- Disable output buffering
@@ -202,6 +209,11 @@ main = do
       let regex = parseRegex pattern []
           metadata = extractMetadata input_line
       in
-        if matchPattern metadata regex
-          then exitSuccess
-          else exitFailure
+        if getSize metadata == 0
+          then 
+            let (r, _) = regex metadata in
+              if r then exitSuccess else exitFailure
+          else
+            if matchPattern metadata regex
+              then exitSuccess
+              else exitFailure

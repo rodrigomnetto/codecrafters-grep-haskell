@@ -27,8 +27,8 @@ parseRegex :: String -> [Regex] -> Regex
 parseRegex [] l = loopRegex (reverse l)
 parseRegex pattern l =
   let (rest, list) = case pattern of
-        '(' : r1 -> 
-              let (grp, r2) = captureGroup r1 
+        '(' : r1 ->
+              let (grp, r2) = captureGroup r1
                   grpRegex = parseRegex grp []
               in
                 build grpRegex l r2
@@ -104,9 +104,7 @@ zeroOrOne regex metadata =
 startAnchor :: Regex
 startAnchor metadata =
   let isBegin = getIndex metadata == 0 in
-    if isBegin
-    then (True, metadata)
-    else (False, clean metadata)
+    (isBegin, metadata)
 
 endAnchor :: Regex
 endAnchor metadata = (isEmpty metadata, metadata)
@@ -129,7 +127,6 @@ isChar char metadata
     in
       (char == chr, tailMetadata)
 
---improve
 isNotAny :: String -> (Regex, String)
 isNotAny pattern =
   let (rgx, ptr) = isAny pattern
@@ -170,25 +167,13 @@ getCharacter (_, (_,c):_) = c
 getIndex :: Metadata -> Int
 getIndex (_, (i,_):_) = i
 
-getSize :: Metadata -> Int --maybe its not necessary
+getSize :: Metadata -> Int
 getSize (s, _) = s
 
 getTail :: Metadata -> Metadata
 getTail (s, x:xs) = (s, xs)
 
-getList :: Metadata -> [(Int, Char)]
-getList (_, l) = l
-
-clean :: Metadata -> Metadata
-clean (s, _) = (s, [])
-
 --end of metadata functions
-
---fixes (zzz|jjj)?$
---loop infinito quando input é jjjj
---aprender a debugar em haskell
---deve consumir o caractere quando um erro ocorre?
-
 
 main :: IO ()
 main = do
@@ -209,10 +194,9 @@ main = do
           metadata = extractMetadata input_line
       in
         if getSize metadata == 0
-          then 
-            let (r, _) = regex metadata in
-              if r then exitSuccess else exitFailure
+          then
+            let (r, _) = regex metadata in exit r
           else
-            if matchPattern metadata regex
-              then exitSuccess
-              else exitFailure
+            exit (matchPattern metadata regex)
+  where
+    exit r = if r then exitSuccess else exitFailure

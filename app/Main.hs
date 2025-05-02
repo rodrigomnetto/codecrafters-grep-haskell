@@ -12,16 +12,16 @@ import GHC.Generics (Meta)
 
 
 type Metadata = (Int, [(Int, Char)])
-type Regex = (Metadata -> (Bool, Metadata)) --tipo mais complexo, fn, parsed, groups
+type Regex = (Metadata -> (Bool, Metadata))
 
 matchPattern :: Metadata -> Regex -> Bool
 matchPattern metadata regex
-  | isEmpty metadata = False -- nao pode retornar falso sempre, vazio é vazio, pode dar match
+  | isEmpty metadata = False
   | otherwise =
-    let (r, rest) = regex metadata in
+    let (r, _) = regex metadata in
     if r
       then r
-      else matchPattern rest regex
+      else matchPattern (getTail metadata) regex
 
 parseRegex :: String -> [Regex] -> Regex
 parseRegex [] l = loopRegex (reverse l)
@@ -186,7 +186,6 @@ clean (s, _) = (s, [])
 
 --fixes (zzz|jjj)?$
 --loop infinito quando input é jjjj
---da erro quando input é vazio
 --aprender a debugar em haskell
 --deve consumir o caractere quando um erro ocorre?
 
